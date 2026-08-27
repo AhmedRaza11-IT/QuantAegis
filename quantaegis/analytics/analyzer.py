@@ -53,9 +53,10 @@ class MarketAnalyzer:
         symbol: str,
         ltf_df: pd.DataFrame,
         htf_df: Optional[pd.DataFrame] = None,
+        macro_data: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        Generate comprehensive 'Invest or Not' insights for a given asset.
+        Generate comprehensive 'Invest or Not' insights incorporating technicals & Forex Factory news.
         """
         cfg = self.settings.strategy
         ltf = add_all_indicators(
@@ -94,24 +95,21 @@ class MarketAnalyzer:
         htf_ema_fast = float(last_htf.get(f"EMA_{cfg.ema_fast}", current_price))
 
         rsi_val = float(last_ltf.get(f"RSI_{cfg.rsi_period}", 50.0))
-        htf_rsi = float(last_htf.get(f"RSI_{cfg.rsi_period}", 50.0))
-
         macd_hist_now = float(last_ltf.get("MACD_hist", 0.0))
         macd_hist_prev = float(prev_ltf.get("MACD_hist", 0.0))
         atr_val = float(last_ltf.get(f"ATR_{cfg.atr_period}", current_price * 0.01))
 
-        # Check conditions
         checklist = []
         score = 0.0
 
-        # 1. HTF Trend (Weight: 30%)
+        # 1. HTF Trend (Weight: 25%)
         htf_bullish = htf_ema_fast > htf_ema_slow and last_htf["close"] > htf_ema_slow
         htf_bearish = htf_ema_fast < htf_ema_slow and last_htf["close"] < htf_ema_slow
         if htf_bullish:
-            score += 30.0
+            score += 25.0
             checklist.append({"name": "HTF Trend Direction", "status": "BULLISH", "passed": True, "detail": "Price & EMA50 above EMA200 on Higher Timeframe"})
         elif htf_bearish:
-            score -= 30.0
+            score -= 25.0
             checklist.append({"name": "HTF Trend Direction", "status": "BEARISH", "passed": True, "detail": "Price & EMA50 below EMA200 on Higher Timeframe"})
         else:
             checklist.append({"name": "HTF Trend Direction", "status": "NEUTRAL", "passed": False, "detail": "Trend is consolidating / sideways"})
@@ -146,44 +144,74 @@ class MarketAnalyzer:
         else:
             checklist.append({"name": "MACD Velocity", "status": "MOMENTUM FADING", "passed": False, "detail": "Histogram momentum contracting"})
 
-        # 4. LTF EMA Confirmation (Weight: 25%)
+        # 4. LTF EMA Confirmation (Weight: 15%)
         ltf_above_ema50 = current_price > ema_fast_val
         if ltf_above_ema50 and htf_bullish:
-            score += 25.0
-            checklist.append({"name": "Price vs 50 EMA", "status": "CONFIRMED", "passed": True, "detail": f"Current price ({current_price:.2f}) above 50 EMA ({ema_fast_val:.2f})"})
+            score += 15.0
+            checklist.append({"name": "Price vs 50 EMA", "status": "CONFIRMED", "passed": True, "detail": f"Current price ({current_price:.2f}) above 50 EMA"})
         elif not ltf_above_ema50 and htf_bearish:
-            score -= 25.0
-            checklist.append({"name": "Price vs 50 EMA", "status": "CONFIRMED SHORT", "passed": True, "detail": f"Current price ({current_price:.2f}) below 50 EMA ({ema_fast_val:.2f})"})
+            score -= 15.0
+            checklist.append({"name": "Price vs 50 EMA", "status": "CONFIRMED SHORT", "passed": True, "detail": f"Current price ({current_price:.2f}) below 50 EMA"})
         else:
             checklist.append({"name": "Price vs 50 EMA", "status": "CONFLICTING", "passed": False, "detail": "Price not aligned with local 50 EMA"})
 
-        # Normalize score to 0 - 100% confidence
+        # 5. Forex Factory Macro News Filter (Weight: 15%)
+        is_news_lockdown = False
+        news_lockdown_reason = None
+        if macro_data:
+            is_news_lockdown = macro_data.get("is_news_lockdown", False)
+            news_lockdown_reason = macro_data.get("lockdown_reason")
+            next_ev = macro_data.get("next_event")
+
+            if is_news_lockdown:
+                checklist.append({
+                    "name": "Forex Factory Macro Filter",
+                    "status": "🔴 NEWS LOCKDOWN",
+                    "passed": False,
+                    "detail": news_lockdown_reason or "High Impact News Imminent (< 30 mins)",
+                })
+            else:
+                bias = macro_data.get("macro_bias", "NEUTRAL")
+                checklist.append({
+                    "name": "Forex Factory Macro Filter",
+                    "status": "🟢 CLEAR / NORMAL",
+                    "passed": True,
+                    "detail": f"Macro Bias: {bias}" + (f" | Next: {next_ev['title']} ({next_ev['status']})" if next_ev else ""),
+                })
+                score += 15.0 if "BULLISH" in bias else (-15.0 if "BEARISH" in bias else 0.0)
+
+        # Normalize score
         confluence_pct = int(min(100, max(0, abs(score))))
 
-        # Verdict
-        if score >= 75:
+        # Verdict calculation
+        if is_news_lockdown:
+            verdict = "NEWS LOCKDOWN"
+            verdict_color = "#f97316"  # Orange/Warning
+            action = "PAUSE / AWAIT NEWS RELEASE"
+            action_badge = "warning"
+        elif score >= 70:
             verdict = "STRONG BUY"
-            verdict_color = "#22c55e"  # Green
+            verdict_color = "#22c55e"
             action = "INVEST / BUY"
             action_badge = "bullish"
-        elif score >= 40:
+        elif score >= 35:
             verdict = "BUY"
             verdict_color = "#4ade80"
             action = "ACCUMULATE / BUY"
             action_badge = "bullish"
-        elif score <= -75:
+        elif score <= -70:
             verdict = "STRONG SELL"
-            verdict_color = "#ef4444"  # Red
+            verdict_color = "#ef4444"
             action = "SHORT / EXIT"
             action_badge = "bearish"
-        elif score <= -40:
+        elif score <= -35:
             verdict = "SELL"
             verdict_color = "#f87171"
             action = "REDUCE / SELL"
             action_badge = "bearish"
         else:
             verdict = "NEUTRAL / WAIT"
-            verdict_color = "#94a3b8"  # Slate
+            verdict_color = "#94a3b8"
             action = "DO NOT INVEST (WAIT FOR SETUP)"
             action_badge = "neutral"
 
@@ -206,22 +234,28 @@ class MarketAnalyzer:
         supports, resistances = self.calculate_support_resistance(ltf)
 
         # Summary narrative
-        if "BUY" in verdict:
+        if is_news_lockdown:
             summary_text = (
-                f"High-probability BUY confluence detected on {symbol}. "
-                f"Trend is aligned bullish above the 200 EMA with RSI at {rsi_val:.1f} and positive MACD expansion. "
-                f"Recommended strategy: Enter near ${current_price:,.2f} with Stop Loss at ${stop_loss:,.2f} and Target 1 at ${take_profit_1:,.2f} (1:{rr_ratio} Risk/Reward)."
+                f"⚠️ HIGH-IMPACT MACRO EVENT IMMINENT: {news_lockdown_reason}. "
+                f"Recommendation: Halt new market entries on {symbol} to prevent slippage during news spikes. "
+                f"Resume trading 15 minutes post-release once volatility stabilizes."
+            )
+        elif "BUY" in verdict:
+            summary_text = (
+                f"High-probability BUY confluence on {symbol} (Score: {confluence_pct}%). "
+                f"Technical trend and Forex Factory macro sentiment are aligned bullish. "
+                f"Recommended strategy: Enter near ${current_price:,.2f} with Stop Loss at ${stop_loss:,.2f} and Target 1 at ${take_profit_1:,.2f} (1:{rr_ratio} R:R)."
             )
         elif "SELL" in verdict:
             summary_text = (
-                f"Bearish trend continuation detected on {symbol}. "
-                f"Price is trading below 50/200 EMAs with negative MACD pressure. "
-                f"Recommended strategy: Look for short entries or protect capital. Stop Loss at ${stop_loss:,.2f} and downside Target at ${take_profit_1:,.2f}."
+                f"Bearish continuation on {symbol} (Score: {confluence_pct}%). "
+                f"Price trading below EMAs with negative momentum. "
+                f"Recommended strategy: Short entry or capital protection. Stop Loss at ${stop_loss:,.2f} and downside Target at ${take_profit_1:,.2f}."
             )
         else:
             summary_text = (
-                f"{symbol} is currently consolidating with mixed indicator signals (Confluence: {confluence_pct}%). "
-                f"Recommendation: Await a confirmed breakout above ${resistances[-1] if resistances else current_price*1.01:,.2f} or below ${supports[0] if supports else current_price*0.99:,.2f} before entering new positions."
+                f"{symbol} is consolidating with mixed signals (Confluence: {confluence_pct}%). "
+                f"Recommendation: Await confirmed breakout above ${resistances[-1] if resistances else current_price*1.01:,.2f} or below ${supports[0] if supports else current_price*0.99:,.2f}."
             )
 
         return {

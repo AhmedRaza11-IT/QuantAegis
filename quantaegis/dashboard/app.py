@@ -1,13 +1,13 @@
 """
 app.py — QuantAegis Standalone Web Dashboard & Analytical Decision Platform.
 
-Zero-dependency Canvas 2D Institutional Charting Engine:
-- 100% Offline-capable, zero CDN dependence, zero JavaScript errors
-- Real-time Candlesticks, EMA 50, EMA 200, Volume, RSI, and MACD subcharts
-- Native SVGs for all icons
-- Multi-Asset Switcher: BTC/USDT, ETH/USDT, SOL/USDT, GOLD (XAU), CRUDE (OIL)
+Features:
+- Zero-dependency Canvas 2D Institutional Charting (Candlesticks, EMA 50/200, Volume, RSI, MACD)
+- Forex Factory Live Economic Calendar & Macroeconomic Sentiment Integration
+- High-Impact Red Folder News Filter & Countdown Warning
+- Multi-Asset Terminal: BTC/USDT, ETH/USDT, SOL/USDT, GOLD (XAU), CRUDE (OIL)
 - Quantitative 'Invest or Not' Intelligence & Confluence Verdicts
-- WhatsApp & Telegram Alert Dispatches
+- Multi-Provider WhatsApp & Telegram Alert Dispatches
 """
 import os
 import asyncio
@@ -25,6 +25,7 @@ import uvicorn
 from quantaegis.core.config import get_settings
 from quantaegis.core.indicators import add_all_indicators
 from quantaegis.analytics.analyzer import MarketAnalyzer
+from quantaegis.analytics.news_feed import ForexFactoryNewsFeed
 from quantaegis.notifier import TelegramNotifier, WhatsAppNotifier
 from quantaegis.core.events import SignalEvent
 
@@ -39,6 +40,7 @@ app.add_middleware(
 )
 
 analyzer = MarketAnalyzer()
+news_feed = ForexFactoryNewsFeed()
 settings = get_settings()
 
 
@@ -73,7 +75,6 @@ def generate_market_data(symbol: str, timeframe: str = "15m", limit: int = 100) 
         base = 100.0
         vol = 0.002
 
-    # Include timeframe in seed so each timeframe has a distinct, consistent structure
     seed_val = abs(hash(f"{symbol}_{timeframe}")) % 10000 + int(now.hour) * 10
     np.random.seed(seed_val)
     returns = np.random.normal(0.0002, vol, limit)
@@ -149,7 +150,6 @@ async def get_market_data(symbol: str = "BTCUSDT", timeframe: str = "15m", limit
         atr_period=cfg.atr_period,
     )
 
-    # Slice the last `limit` bars for charting
     df = df.iloc[-limit:].copy()
 
     candles = []
@@ -193,11 +193,33 @@ async def get_market_data(symbol: str = "BTCUSDT", timeframe: str = "15m", limit
 
 @app.get("/api/insights")
 async def get_insights(symbol: str = "BTCUSDT"):
-    """Return quantitative 'Invest or Not' decision analysis."""
+    """Return quantitative 'Invest or Not' decision analysis combined with Forex Factory macro sentiment."""
     ltf_df = await fetch_live_market_data(symbol, "15m", limit=120)
     htf_df = await fetch_live_market_data(symbol, "1h", limit=120)
-    insights = analyzer.analyze_asset(symbol.upper(), ltf_df, htf_df)
+    macro_data = await news_feed.get_macro_risk_assessment(symbol.upper())
+    insights = analyzer.analyze_asset(symbol.upper(), ltf_df, htf_df, macro_data=macro_data)
+    insights["macro_data"] = macro_data
     return insights
+
+
+@app.get("/api/news/calendar")
+async def get_economic_calendar():
+    """Return live Forex Factory economic calendar and macro assessment."""
+    events = await news_feed.fetch_calendar_events()
+    usd_assessment = await news_feed.get_macro_risk_assessment("USD")
+    xau_assessment = await news_feed.get_macro_risk_assessment("XAUUSD")
+    btc_assessment = await news_feed.get_macro_risk_assessment("BTCUSDT")
+    oil_assessment = await news_feed.get_macro_risk_assessment("USOIL")
+
+    return {
+        "events": events,
+        "assessments": {
+            "USD": usd_assessment,
+            "XAUUSD": xau_assessment,
+            "BTCUSDT": btc_assessment,
+            "USOIL": oil_assessment,
+        }
+    }
 
 
 class WhatsAppUpdateModel(BaseModel):
@@ -255,7 +277,7 @@ async def update_whatsapp(payload: WhatsAppUpdateModel):
     settings.whatsapp_instance_id = inst
     settings.whatsapp_webhook_url = wh
 
-    return {"status": "success", "message": f"WhatsApp configuration saved for {provider}"}
+    return {"status": "success", "message": f"WhatsApp configuration saved ({provider})"}
 
 
 @app.post("/api/test-alert")
@@ -281,7 +303,7 @@ async def trigger_test_alert():
         f"✅ WhatsApp integration is ACTIVE via *{s.whatsapp_provider.upper()}*!\n"
         f"🏷️ Symbol: *BTCUSDT*\n"
         f"📈 Direction: 🟢 *BUY*\n"
-        f"💰 Entry: *$65,420.00* | SL: *$64,600.00* | TP: *$67,060.00*\n"
+        f"💰 Entry: *$95,420.00* | SL: *$94,600.00* | TP: *$97,060.00*\n"
         f"⏰ {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
@@ -299,7 +321,7 @@ async def trigger_test_alert():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 100% Self-Contained Zero-Dependency Financial Dashboard UI
+# Complete Dashboard UI with Native Forex Factory News & Economic Calendar Tab
 # ─────────────────────────────────────────────────────────────────────────────
 
 HTML_UI = """<!DOCTYPE html>
@@ -307,7 +329,7 @@ HTML_UI = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuantAegis — Institutional Trading & Analytics Dashboard</title>
+    <title>QuantAegis — Institutional Trading & Macro Analytics</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background-color: #0b0f19; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
@@ -322,7 +344,10 @@ HTML_UI = """<!DOCTYPE html>
         .tab-btn { background: transparent; border: none; color: #94a3b8; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.15s; }
         .tab-btn:hover { color: #ffffff; }
         .tab-btn.active { background: #0284c7; color: #ffffff; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4); }
-        
+        .tab-news { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .tab-news:hover { background: rgba(239, 68, 68, 0.25); color: #fff; }
+        .tab-news.active { background: #ef4444 !important; color: #ffffff !important; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5); }
+
         .top-actions { display: flex; align-items: center; gap: 10px; }
         .btn-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; border: none; }
         .btn-wa { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
@@ -346,14 +371,14 @@ HTML_UI = """<!DOCTYPE html>
         
         .tf-selector { display: flex; background: #0f172a; padding: 3px; border-radius: 8px; border: 1px solid #1e293b; gap: 2px; }
         .tf-btn { background: transparent; border: none; color: #94a3b8; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
-        .tf-btn.active { background: #334155; color: #ffffff; }
+        .tf-btn.active { background: #0284c7; color: #ffffff; box-shadow: 0 0 8px rgba(2, 132, 199, 0.4); }
         
         canvas { display: block; width: 100%; border-radius: 10px; }
         
         /* Decision Panel */
         .verdict-box { text-align: center; padding: 18px 0; border-top: 1px solid #1f293d; border-bottom: 1px solid #1f293d; margin: 12px 0; }
         .verdict-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; }
-        .verdict-badge { font-size: 32px; font-weight: 900; color: #22c55e; margin: 4px 0; text-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+        .verdict-badge { font-size: 30px; font-weight: 900; color: #22c55e; margin: 4px 0; text-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
         .verdict-action { font-size: 12px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; }
         
         .summary-box { font-size: 12px; line-height: 1.6; color: #cbd5e1; background: #0f172a; padding: 12px 14px; border-radius: 10px; border: 1px solid #1e293b; margin-top: 12px; }
@@ -365,6 +390,12 @@ HTML_UI = """<!DOCTYPE html>
         .plan-row.tp { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.25); color: #86efac; }
         
         .check-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; border-radius: 8px; font-size: 11px; background: #0f172a; border: 1px solid #1e293b; margin-bottom: 6px; }
+
+        /* News Tab Elements */
+        .impact-badge { font-size: 10px; font-weight: 800; font-family: monospace; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; display: inline-block; }
+        .impact-high { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .impact-medium { background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); }
+        .impact-low { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4); }
         
         /* Modal */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 999; }
@@ -388,13 +419,14 @@ HTML_UI = """<!DOCTYPE html>
             </div>
         </div>
 
-        <!-- Asset Switcher Tabs -->
+        <!-- Asset & News Switcher Tabs -->
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="switchSymbol('BTCUSDT', this)">BTC/USDT</button>
             <button class="tab-btn" onclick="switchSymbol('ETHUSDT', this)">ETH/USDT</button>
             <button class="tab-btn" onclick="switchSymbol('SOLUSDT', this)">SOL/USDT</button>
             <button class="tab-btn" onclick="switchSymbol('XAUUSD', this)">GOLD (XAU)</button>
             <button class="tab-btn" onclick="switchSymbol('USOIL', this)">CRUDE (OIL)</button>
+            <button class="tab-btn tab-news" onclick="showNewsView(this)">🔴 Forex Factory News</button>
         </div>
 
         <div class="top-actions">
@@ -409,8 +441,10 @@ HTML_UI = """<!DOCTYPE html>
         </div>
     </header>
 
-    <!-- Main Grid -->
-    <div class="main-container">
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <!-- VIEW 1: Charts & Decision Engine (Default)                    -->
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <div id="chartView" class="main-container">
 
         <!-- Left: Charts & Live Monitor -->
         <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -420,7 +454,7 @@ HTML_UI = """<!DOCTYPE html>
                 <div class="chart-header">
                     <div class="price-badge">
                         <span id="activeSymDisplay" class="symbol-title">BTCUSDT</span>
-                        <span id="priceDisplay" class="symbol-price">$65,420.00</span>
+                        <span id="priceDisplay" class="symbol-price">$95,420.00</span>
                         <span class="legend-tag tag-ema50">EMA 50 (Blue)</span>
                         <span class="legend-tag tag-ema200">EMA 200 (Orange)</span>
                     </div>
@@ -484,9 +518,9 @@ HTML_UI = """<!DOCTYPE html>
                             <td style="padding: 8px; font-weight: bold; color: #fff;">BTCUSDT</td>
                             <td style="padding: 8px; color: #22c55e; font-weight: bold;">BUY</td>
                             <td style="padding: 8px;">0.25</td>
-                            <td style="padding: 8px;">$64,850.00</td>
-                            <td style="padding: 8px; color: #f87171;">$64,100.00</td>
-                            <td style="padding: 8px; color: #4ade80;">$66,350.00</td>
+                            <td style="padding: 8px;">$94,850.00</td>
+                            <td style="padding: 8px; color: #f87171;">$94,100.00</td>
+                            <td style="padding: 8px; color: #4ade80;">$96,350.00</td>
                             <td style="padding: 8px; color: #22c55e; font-weight: bold;">+$142.50 (+0.87%)</td>
                         </tr>
                     </tbody>
@@ -513,7 +547,7 @@ HTML_UI = """<!DOCTYPE html>
 
             <!-- Narrative Summary -->
             <div id="summaryText" class="summary-box">
-                Loading quantitative decision analysis...
+                Loading quantitative & macro decision analysis...
             </div>
 
             <!-- Trade Setup Plan -->
@@ -524,19 +558,19 @@ HTML_UI = """<!DOCTYPE html>
                 </div>
                 <div class="plan-row">
                     <span style="color: #94a3b8;">Entry Price</span>
-                    <strong id="planEntry" style="color: #fff;">$65,420.00</strong>
+                    <strong id="planEntry" style="color: #fff;">$95,420.00</strong>
                 </div>
                 <div class="plan-row sl">
                     <span>Stop Loss (SL)</span>
-                    <strong id="planSL">$64,600.00</strong>
+                    <strong id="planSL">$94,600.00</strong>
                 </div>
                 <div class="plan-row tp">
                     <span>Target 1 (TP1)</span>
-                    <strong id="planTP1">$67,060.00</strong>
+                    <strong id="planTP1">$97,060.00</strong>
                 </div>
                 <div class="plan-row tp">
                     <span>Target 2 (TP2)</span>
-                    <strong id="planTP2">$67,880.00</strong>
+                    <strong id="planTP2">$97,880.00</strong>
                 </div>
                 <div class="plan-row">
                     <span style="color: #94a3b8;">Risk / Reward</span>
@@ -559,15 +593,105 @@ HTML_UI = """<!DOCTYPE html>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; font-family: monospace;">
                     <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); padding: 8px; border-radius: 8px;">
                         <span style="color: #94a3b8; display: block; font-size: 10px;">Supports</span>
-                        <strong id="suppList" style="color: #4ade80;">$64,100, $63,500</strong>
+                        <strong id="suppList" style="color: #4ade80;">$94,100, $93,500</strong>
                     </div>
                     <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px; border-radius: 8px;">
                         <span style="color: #94a3b8; display: block; font-size: 10px;">Resistances</span>
-                        <strong id="resList" style="color: #f87171;">$66,200, $67,000</strong>
+                        <strong id="resList" style="color: #f87171;">$96,200, $97,000</strong>
                     </div>
                 </div>
             </div>
 
+        </div>
+
+    </div>
+
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <!-- VIEW 2: Forex Factory Live Macro News & Economic Calendar     -->
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <div id="newsView" class="main-container" style="display: none; grid-template-columns: 1fr;">
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <h2 style="font-size: 20px; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #ef4444;">🔴</span> Forex Factory Live Macro Intelligence
+                    </h2>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 2px;">
+                        Real-time macroeconomic calendar events, high-impact news countdowns, and market impact analysis.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="tf-btn active" onclick="filterNews('ALL', this)">All Events</button>
+                    <button class="tf-btn" onclick="filterNews('HIGH', this)" style="color: #f87171;">🔴 Red Folder Only</button>
+                    <button class="tf-btn" onclick="filterNews('USD', this)">🇺🇸 USD</button>
+                    <button class="tf-btn" onclick="filterNews('EUR', this)">🇪🇺 EUR</button>
+                </div>
+            </div>
+
+            <!-- 4 Asset Macro Outlook Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px;">
+                <div style="background: #0f172a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <strong style="color: #f59e0b; font-size: 13px;">🪙 Gold (XAUUSD)</strong>
+                        <span class="impact-badge impact-high">Macro Sensitive</span>
+                    </div>
+                    <p style="font-size: 11px; color: #cbd5e1; line-height: 1.5;">
+                        Strong bullion inflows. Driven inversely by US Dollar yields & inflation data releases.
+                    </p>
+                </div>
+
+                <div style="background: #0f172a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <strong style="color: #38bdf8; font-size: 13px;">₿ Bitcoin (BTCUSDT)</strong>
+                        <span class="impact-badge impact-medium">Liquidity Driven</span>
+                    </div>
+                    <p style="font-size: 11px; color: #cbd5e1; line-height: 1.5;">
+                        Correlated with global monetary liquidity & Federal Reserve interest rate policy shifts.
+                    </p>
+                </div>
+
+                <div style="background: #0f172a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <strong style="color: #10b981; font-size: 13px;">🛢️ Crude Oil (USOIL)</strong>
+                        <span class="impact-badge impact-high">EIA Inventory</span>
+                    </div>
+                    <p style="font-size: 11px; color: #cbd5e1; line-height: 1.5;">
+                        Sensitive to weekly EIA stock reports and geopolitical transport chokepoint risks.
+                    </p>
+                </div>
+
+                <div style="background: #0f172a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <strong style="color: #a855f7; font-size: 13px;">💵 US Dollar (DXY)</strong>
+                        <span class="impact-badge impact-high">Core Driver</span>
+                    </div>
+                    <p style="font-size: 11px; color: #cbd5e1; line-height: 1.5;">
+                        CPI, Non-Farm Payrolls, and FOMC meetings dictate multi-market macro volatility.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Economic Calendar Table -->
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                    <thead>
+                        <tr style="background: #0f172a; color: #94a3b8; border-bottom: 1px solid #1e293b;">
+                            <th style="padding: 10px;">Time (UTC)</th>
+                            <th style="padding: 10px;">Currency</th>
+                            <th style="padding: 10px;">Impact</th>
+                            <th style="padding: 10px;">Event Name</th>
+                            <th style="padding: 10px;">Status / Countdown</th>
+                            <th style="padding: 10px;">Forecast</th>
+                            <th style="padding: 10px;">Previous</th>
+                            <th style="padding: 10px;">Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody id="newsTableBody" style="font-family: monospace;">
+                        <!-- Dynamically filled -->
+                    </tbody>
+                </table>
+            </div>
         </div>
 
     </div>
@@ -623,17 +747,31 @@ HTML_UI = """<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- Charting & Dashboard Engine -->
+    <!-- Charting, News & Dashboard Engine -->
     <script>
         var currentSymbol = 'BTCUSDT';
         var currentTimeframe = '15m';
+        var allNewsEvents = [];
+        var activeNewsFilter = 'ALL';
 
         function switchSymbol(sym, el) {
+            document.getElementById('chartView').style.display = 'grid';
+            document.getElementById('newsView').style.display = 'none';
+
             currentSymbol = sym;
             document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
             if (el) el.classList.add('active');
             document.getElementById('activeSymDisplay').innerText = sym;
             refreshDashboard();
+        }
+
+        function showNewsView(el) {
+            document.getElementById('chartView').style.display = 'none';
+            document.getElementById('newsView').style.display = 'grid';
+
+            document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
+            if (el) el.classList.add('active');
+            loadNewsCalendar();
         }
 
         function switchTF(tf, el) {
@@ -848,7 +986,7 @@ HTML_UI = """<!DOCTYPE html>
                     drawMACD(mData.macd);
                 }
 
-                // 2. Fetch Decision Insights
+                // 2. Fetch Decision Insights (Combined with Forex Factory Macro)
                 var iRes = await fetch('/api/insights?symbol=' + currentSymbol);
                 var iData = await iRes.json();
 
@@ -870,7 +1008,7 @@ HTML_UI = """<!DOCTYPE html>
                 var checkHtml = iData.checklist.map(function(item) {
                     return '<div class="check-item">' +
                         '<span>' + item.name + '</span>' +
-                        '<strong style="color:' + (item.passed ? '#4ade80' : '#94a3b8') + ';">' + item.status + '</strong>' +
+                        '<strong style="color:' + (item.passed ? '#4ade80' : '#f87171') + ';">' + item.status + '</strong>' +
                     '</div>';
                 }).join('');
                 document.getElementById('checkListContainer').innerHTML = checkHtml;
@@ -878,6 +1016,55 @@ HTML_UI = """<!DOCTYPE html>
             } catch (err) {
                 console.error('Error refreshing dashboard:', err);
             }
+        }
+
+        async function loadNewsCalendar() {
+            try {
+                var res = await fetch('/api/news/calendar');
+                var data = await res.json();
+                allNewsEvents = data.events || [];
+                renderNewsTable();
+            } catch(e) {
+                console.error('Error loading news:', e);
+            }
+        }
+
+        function filterNews(filterType, el) {
+            activeNewsFilter = filterType;
+            if (el) {
+                document.querySelectorAll('#newsView .tf-btn').forEach(function(b) { b.classList.remove('active'); });
+                el.classList.add('active');
+            }
+            renderNewsTable();
+        }
+
+        function renderNewsTable() {
+            var tbody = document.getElementById('newsTableBody');
+            if (!tbody) return;
+
+            var filtered = allNewsEvents.filter(function(e) {
+                if (activeNewsFilter === 'HIGH') return e.impact === 'HIGH';
+                if (activeNewsFilter === 'USD') return e.currency === 'USD';
+                if (activeNewsFilter === 'EUR') return e.currency === 'EUR';
+                return true;
+            });
+
+            var html = filtered.map(function(e) {
+                var impactCls = e.impact === 'HIGH' ? 'impact-high' : (e.impact === 'MEDIUM' ? 'impact-medium' : 'impact-low');
+                var isImm = e.is_imminent ? 'style="background: rgba(239, 68, 68, 0.15);"' : '';
+                return '<tr ' + isImm + ' style="border-bottom: 1px solid #1e293d;">' +
+                    '<td style="padding: 10px; color: #94a3b8;">' + e.time_utc + '</td>' +
+                    '<td style="padding: 10px; font-weight: bold; color: #fff;">' + e.currency + '</td>' +
+                    '<td style="padding: 10px;"><span class="impact-badge ' + impactCls + '">' + e.impact + '</span></td>' +
+                    '<td style="padding: 10px; font-weight: 600; color: #e2e8f0;">' + e.title + '</td>' +
+                    '<td style="padding: 10px; font-weight: bold; color: ' + (e.is_imminent ? '#ef4444' : '#38bdf8') + ';">' + e.status + '</td>' +
+                    '<td style="padding: 10px; color: #94a3b8;">' + e.forecast + '</td>' +
+                    '<td style="padding: 10px; color: #94a3b8;">' + e.previous + '</td>' +
+                    '<td style="padding: 10px; font-weight: bold; color: #4ade80;">' + e.actual + '</td>' +
+                '</tr>';
+            }).join('');
+
+            tbody.innerHTML = html || '<tr><td colspan="8" style="padding: 20px; text-align: center; color: #64748b;">No matching economic events found</td></tr>';
         }
 
         function toggleWaFields() {
@@ -941,10 +1128,19 @@ HTML_UI = """<!DOCTYPE html>
             }
         }
 
-        window.addEventListener('resize', refreshDashboard);
+        window.addEventListener('resize', function() {
+            if (document.getElementById('chartView').style.display !== 'none') {
+                refreshDashboard();
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', function() {
             refreshDashboard();
-            setInterval(refreshDashboard, 8000);
+            setInterval(function() {
+                if (document.getElementById('chartView').style.display !== 'none') {
+                    refreshDashboard();
+                }
+            }, 8000);
         });
     </script>
 </body>
@@ -957,7 +1153,7 @@ async def serve_dashboard():
     return HTMLResponse(content=HTML_UI)
 
 
-def run_dashboard(host: str = "127.0.0.1", port: int = 8000):
+def run_dashboard(host: str = "0.0.0.0", port: int = 8000):
     print(f"\n[🚀] QuantAegis Web Dashboard online at http://localhost:{port}\n")
     uvicorn.run(app, host=host, port=port)
 
