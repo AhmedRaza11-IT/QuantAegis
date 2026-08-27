@@ -463,7 +463,8 @@ HTML_UI = """<!DOCTYPE html>
         .card { background: #111827; border: 1px solid #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); overflow: hidden; width: 100%; box-sizing: border-box; }
         
         .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
-        .price-badge { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+        .price-badge-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .chart-controls-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .symbol-title { font-size: 20px; font-weight: 900; color: #ffffff; }
         .symbol-price { font-size: 20px; font-weight: 800; font-family: monospace; color: #38bdf8; }
         
@@ -474,6 +475,11 @@ HTML_UI = """<!DOCTYPE html>
         .tf-selector { display: flex; background: #0f172a; padding: 3px; border-radius: 8px; border: 1px solid #1e293b; gap: 2px; }
         .tf-btn { background: transparent; border: none; color: #94a3b8; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
         .tf-btn.active { background: #0284c7; color: #ffffff; box-shadow: 0 0 8px rgba(2, 132, 199, 0.4); }
+        
+        .subcharts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #1e293b; }
+        @media (max-width: 768px) {
+            .subcharts-grid { grid-template-columns: 1fr; gap: 14px; }
+        }
         
         canvas { display: block; width: 100% !important; max-width: 100% !important; border-radius: 10px; box-sizing: border-box !important; }
         
@@ -556,14 +562,16 @@ HTML_UI = """<!DOCTYPE html>
             <!-- Main Candlestick Chart Card -->
             <div class="card">
                 <div class="chart-header">
-                    <div class="price-badge">
+                    <div class="price-badge-row">
                         <span id="activeSymDisplay" class="symbol-title">BTCUSDT</span>
                         <span id="priceDisplay" class="symbol-price">$95,420.00</span>
-                        <span class="legend-tag tag-ema50">EMA 50 (Blue)</span>
-                        <span class="legend-tag tag-ema200">EMA 200 (Orange)</span>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <span class="legend-tag tag-ema50">EMA 50</span>
+                            <span class="legend-tag tag-ema200">EMA 200</span>
+                        </div>
                     </div>
 
-                    <div style="display: flex; gap: 8px; align-items: center;">
+                    <div class="chart-controls-row">
                         <div class="tf-selector">
                             <button class="tf-btn active" onclick="switchTF('15m', this)">15M</button>
                             <button class="tf-btn" onclick="switchTF('1h', this)">1H</button>
@@ -576,23 +584,23 @@ HTML_UI = """<!DOCTYPE html>
                 </div>
 
                 <!-- Canvas Chart Containers -->
-                <canvas id="candleCanvas" height="380" style="background: #090d16; border: 1px solid #1e293b;"></canvas>
+                <canvas id="candleCanvas" style="background: #090d16; border: 1px solid #1e293b; border-radius: 10px;"></canvas>
 
-                <!-- Subcharts -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #1e293b;">
+                <!-- Subcharts (Responsive: 2 cols on Desktop, 1 col on Mobile) -->
+                <div class="subcharts-grid">
                     <div>
                         <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">
                             <span>RSI (14) Momentum</span>
                             <span id="rsiVal" style="font-family: monospace; color: #38bdf8;">52.4</span>
                         </div>
-                        <canvas id="rsiCanvas" height="90" style="background: #090d16; border: 1px solid #1e293b;"></canvas>
+                        <canvas id="rsiCanvas" style="background: #090d16; border: 1px solid #1e293b; border-radius: 10px;"></canvas>
                     </div>
                     <div>
                         <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">
                             <span>MACD Histogram (12, 26, 9)</span>
                             <span id="macdVal" style="font-family: monospace; color: #22c55e;">+18.5</span>
                         </div>
-                        <canvas id="macdCanvas" height="90" style="background: #090d16; border: 1px solid #1e293b;"></canvas>
+                        <canvas id="macdCanvas" style="background: #090d16; border: 1px solid #1e293b; border-radius: 10px;"></canvas>
                     </div>
                 </div>
             </div>
