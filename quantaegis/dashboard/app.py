@@ -49,31 +49,33 @@ async def health_check():
 
 
 def generate_market_data(symbol: str, timeframe: str = "15m", limit: int = 100) -> pd.DataFrame:
-    """Generate realistic institutional price action data."""
+    """Generate realistic institutional price action data tailored to timeframe."""
     now = datetime.now(timezone.utc)
     delta_mins = 15 if timeframe == "15m" else 60 if timeframe == "1h" else 240 if timeframe == "4h" else 1440
     timestamps = [now - timedelta(minutes=delta_mins * (limit - i)) for i in range(limit)]
 
     if "BTC" in symbol:
-        base = 65420.0
-        vol = 0.002
+        base = 95420.0
+        vol = 0.002 if timeframe == "15m" else 0.0045 if timeframe == "1h" else 0.0085
     elif "ETH" in symbol:
-        base = 2680.0
-        vol = 0.0025
+        base = 3380.0
+        vol = 0.0025 if timeframe == "15m" else 0.0055 if timeframe == "1h" else 0.010
     elif "SOL" in symbol:
-        base = 154.50
-        vol = 0.0035
+        base = 184.50
+        vol = 0.0035 if timeframe == "15m" else 0.0075 if timeframe == "1h" else 0.014
     elif "XAU" in symbol:
-        base = 2514.50
-        vol = 0.0015
+        base = 2714.50
+        vol = 0.0015 if timeframe == "15m" else 0.0035 if timeframe == "1h" else 0.0065
     elif "OIL" in symbol:
         base = 76.80
-        vol = 0.0025
+        vol = 0.0025 if timeframe == "15m" else 0.005 if timeframe == "1h" else 0.009
     else:
         base = 100.0
         vol = 0.002
 
-    np.random.seed(abs(hash(symbol)) % 10000 + int(now.hour))
+    # Include timeframe in seed so each timeframe has a distinct, consistent structure
+    seed_val = abs(hash(f"{symbol}_{timeframe}")) % 10000 + int(now.hour) * 10
+    np.random.seed(seed_val)
     returns = np.random.normal(0.0002, vol, limit)
     close = base * np.exp(np.cumsum(returns))
     high = close * (1 + np.abs(np.random.normal(0, vol * 0.7, limit)))
@@ -423,14 +425,14 @@ HTML_UI = """<!DOCTYPE html>
                         <span class="legend-tag tag-ema200">EMA 200 (Orange)</span>
                     </div>
 
-                    <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="display: flex; gap: 8px; align-items: center;">
                         <div class="tf-selector">
                             <button class="tf-btn active" onclick="switchTF('15m', this)">15M</button>
                             <button class="tf-btn" onclick="switchTF('1h', this)">1H</button>
                             <button class="tf-btn" onclick="switchTF('4h', this)">4H</button>
                         </div>
-                        <button class="tf-btn" onclick="refreshDashboard()" style="padding: 6px 8px; background: #0f172a; border: 1px solid #1e293b;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        <button onclick="triggerManualRefresh()" style="display: flex; align-items: center; justify-content: center; padding: 6px 10px; background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; cursor: pointer;" title="Refresh Chart & Insights">
+                            <svg id="refreshSvg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                         </button>
                     </div>
                 </div>
@@ -636,8 +638,21 @@ HTML_UI = """<!DOCTYPE html>
 
         function switchTF(tf, el) {
             currentTimeframe = tf;
-            document.querySelectorAll('.tf-btn').forEach(function(btn) { btn.classList.remove('active'); });
+            document.querySelectorAll('.tf-selector .tf-btn').forEach(function(btn) { btn.classList.remove('active'); });
             if (el) el.classList.add('active');
+            refreshDashboard();
+        }
+
+        function triggerManualRefresh() {
+            var icon = document.getElementById('refreshSvg');
+            if (icon) {
+                icon.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                icon.style.transform = 'rotate(360deg)';
+                setTimeout(function() {
+                    icon.style.transition = 'none';
+                    icon.style.transform = 'rotate(0deg)';
+                }, 500);
+            }
             refreshDashboard();
         }
 
