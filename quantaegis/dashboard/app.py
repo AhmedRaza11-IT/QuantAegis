@@ -42,6 +42,12 @@ analyzer = MarketAnalyzer()
 settings = get_settings()
 
 
+@app.get("/healthz")
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "app": "QuantAegis", "version": "1.0.0"}
+
+
 def generate_market_data(symbol: str, timeframe: str = "15m", limit: int = 100) -> pd.DataFrame:
     """Generate realistic institutional price action data."""
     now = datetime.now(timezone.utc)
