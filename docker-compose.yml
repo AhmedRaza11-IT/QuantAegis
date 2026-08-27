@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  quantaegis:
+    build: .
+    container_name: quantaegis_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./logs:/app/logs

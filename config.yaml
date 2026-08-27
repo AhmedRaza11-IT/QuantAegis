@@ -1,0 +1,64 @@
+# QuantAegis Configuration
+app:
+  name: QuantAegis
+  version: "0.1.0"
+  dry_run: true  # Set to false for live trading
+  log_level: INFO
+
+trading:
+  # Markets to enable
+  markets:
+    mt5:
+      enabled: true
+      symbols:
+        - symbol: XAUUSD
+          pip_value: 0.1
+          lot_step: 0.01
+          min_lot: 0.01
+          max_lot: 100.0
+        - symbol: USOIL
+          pip_value: 0.01
+          lot_step: 0.01
+          min_lot: 0.01
+          max_lot: 50.0
+      higher_timeframe: H1
+      lower_timeframe: M15
+      poll_interval_seconds: 15
+    crypto:
+      enabled: true
+      exchange: binance
+      symbols:
+        - BTCUSDT
+        - ETHUSDT
+        - SOLUSDT
+      higher_timeframe: 1h
+      lower_timeframe: 15m
+
+strategy:
+  name: MultiTimeframeTrend
+  ema_fast: 50
+  ema_slow: 200
+  rsi_period: 14
+  rsi_oversold: 40
+  rsi_overbought: 60
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  atr_period: 14
+  atr_sl_multiplier: 1.5
+  atr_tp_multiplier: 3.0
+
+risk:
+  risk_pct_per_trade: 0.01       # 1% of equity per trade
+  max_daily_drawdown_pct: 0.05   # 5% daily drawdown kill-switch
+  max_spread_pips: 5.0           # Reject if spread > 5 pips
+  max_open_trades: 5             # Max simultaneous open positions
+  max_retries: 3                 # Order retry attempts
+  retry_delay_seconds: 2.0
+
+notifier:
+  daily_summary_time: "23:55"    # UTC time for daily summary
+  send_entry_alerts: true
+  send_exit_alerts: true
+  send_error_alerts: true
+  send_daily_summary: true
