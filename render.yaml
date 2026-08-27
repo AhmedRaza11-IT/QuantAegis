@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: quantaegis
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn quantaegis.dashboard.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      - key: DRY_RUN
+        value: "true"
+      - key: WHATSAPP_ENABLED
+        value: "true"
+      - key: WHATSAPP_PROVIDER
+        value: greenapi
+      - key: WHATSAPP_PHONE_NUMBER
+        value: "+923222289855"
