@@ -340,25 +340,82 @@ HTML_UI = """<!DOCTYPE html>
         .badge-pro { font-size: 10px; font-weight: 600; padding: 2px 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-radius: 9999px; }
         .logo-text p { font-size: 11px; color: #94a3b8; }
         
-        .tabs-nav { display: flex; background: #0f172a; padding: 4px; border-radius: 10px; border: 1px solid #1e293b; gap: 4px; }
-        .tab-btn { background: transparent; border: none; color: #94a3b8; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.15s; }
-        .tab-btn:hover { color: #ffffff; }
-        .tab-btn.active { background: #0284c7; color: #ffffff; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4); }
-        .tab-news { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-        .tab-news:hover { background: rgba(239, 68, 68, 0.25); color: #fff; }
-        .tab-news.active { background: #ef4444 !important; color: #ffffff !important; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5); }
+        .tabs-nav { 
+            display: flex; 
+            background: #0f172a; 
+            padding: 4px; 
+            border-radius: 10px; 
+            border: 1px solid #1e293b; 
+            gap: 6px; 
+            overflow-x: auto; 
+            max-width: 100%; 
+            -webkit-overflow-scrolling: touch; 
+            scrollbar-width: none; 
+            flex-wrap: nowrap; 
+        }
+        .tabs-nav::-webkit-scrollbar { display: none; }
+        
+        .tab-btn { 
+            white-space: nowrap; 
+            flex-shrink: 0; 
+            background: transparent; 
+            border: none; 
+            color: #94a3b8; 
+            padding: 7px 14px; 
+            border-radius: 8px; 
+            font-size: 12px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: 0.15s; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+        }
+        .tab-btn:hover { color: #ffffff; background: rgba(255, 255, 255, 0.05); }
+        .tab-btn.active { background: #0284c7; color: #ffffff; box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4); }
+        
+        .tab-news { 
+            background: rgba(239, 68, 68, 0.15); 
+            color: #f87171; 
+            border: 1px solid rgba(239, 68, 68, 0.35); 
+        }
+        .tab-news:hover { 
+            background: rgba(239, 68, 68, 0.3) !important; 
+            color: #ffffff !important; 
+        }
+        .tab-news.active { 
+            background: #ef4444 !important; 
+            color: #ffffff !important; 
+            box-shadow: 0 0 14px rgba(239, 68, 68, 0.6) !important; 
+        }
 
-        .top-actions { display: flex; align-items: center; gap: 10px; }
-        .btn-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; border: none; }
+        .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .btn-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; border: none; white-space: nowrap; }
         .btn-wa { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
         .btn-wa:hover { background: rgba(16, 185, 129, 0.25); }
         .btn-alert { background: #4f46e5; color: #ffffff; }
         .btn-alert:hover { background: #4338ca; }
         
-        .main-container { flex: 1; padding: 24px; display: grid; grid-template-columns: 3fr 1.3fr; gap: 24px; }
-        @media (max-width: 1100px) { .main-container { grid-template-columns: 1fr; } }
+        .main-container { flex: 1; padding: 24px; display: grid; grid-template-columns: 3fr 1.3fr; gap: 24px; width: 100%; }
         
-        .card { background: #111827; border: 1px solid #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); }
+        /* 📱 Responsive Breakpoints */
+        @media (max-width: 1024px) {
+            .main-container { grid-template-columns: 1fr; padding: 18px; gap: 18px; }
+            header { padding: 12px 18px; }
+        }
+        @media (max-width: 768px) {
+            header { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; }
+            .logo-box { justify-content: space-between; }
+            .tabs-nav { width: 100%; }
+            .top-actions { width: 100%; justify-content: space-between; }
+            .top-actions .btn-action { flex: 1; justify-content: center; }
+            .main-container { padding: 12px; gap: 14px; }
+            .symbol-title, .symbol-price { font-size: 18px; }
+            .chart-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .price-badge { flex-wrap: wrap; }
+        }
+        
+        .card { background: #111827; border: 1px solid #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); overflow: hidden; }
         
         .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
         .price-badge { display: flex; align-items: baseline; gap: 12px; }
@@ -426,7 +483,7 @@ HTML_UI = """<!DOCTYPE html>
             <button class="tab-btn" onclick="switchSymbol('SOLUSDT', this)">SOL/USDT</button>
             <button class="tab-btn" onclick="switchSymbol('XAUUSD', this)">GOLD (XAU)</button>
             <button class="tab-btn" onclick="switchSymbol('USOIL', this)">CRUDE (OIL)</button>
-            <button class="tab-btn tab-news" onclick="showNewsView(this)">🔴 Forex Factory News</button>
+            <button class="tab-btn tab-news" onclick="showNewsView(this)"><span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; margin-right: 4px;"></span>Forex Factory News</button>
         </div>
 
         <div class="top-actions">
