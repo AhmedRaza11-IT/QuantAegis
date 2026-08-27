@@ -332,8 +332,41 @@ HTML_UI = """<!DOCTYPE html>
     <title>QuantAegis — Institutional Trading & Macro Analytics</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #0b0f19; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
-        header { background: #111827; border-bottom: 1px solid #1f293d; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; position: sticky; top: 0; z-index: 40; }
+        html, body { 
+            width: 100%; 
+            max-width: 100vw; 
+            overflow-x: hidden; 
+            background-color: #0b0f19; 
+            color: #f1f5f9; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        header { 
+            background: #111827; 
+            border-bottom: 1px solid #1f293d; 
+            padding: 12px 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
+        
+        .header-top { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            width: 100%; 
+            gap: 12px; 
+            flex-wrap: wrap; 
+        }
+
         .logo-box { display: flex; align-items: center; gap: 10px; }
         .logo-icon { background: linear-gradient(135deg, #0284c7, #4f46e5); padding: 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
         .logo-text h1 { font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 6px; }
@@ -348,7 +381,8 @@ HTML_UI = """<!DOCTYPE html>
             border: 1px solid #1e293b; 
             gap: 6px; 
             overflow-x: auto; 
-            max-width: 100%; 
+            width: 100%; 
+            box-sizing: border-box; 
             -webkit-overflow-scrolling: touch; 
             scrollbar-width: none; 
             flex-wrap: nowrap; 
@@ -388,54 +422,65 @@ HTML_UI = """<!DOCTYPE html>
             color: #ffffff !important; 
             box-shadow: 0 0 14px rgba(239, 68, 68, 0.6) !important; 
         }
+        .live-dot { display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; }
 
-        .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .btn-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; border: none; white-space: nowrap; }
+        .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .btn-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; border: none; white-space: nowrap; }
         .btn-wa { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
         .btn-wa:hover { background: rgba(16, 185, 129, 0.25); }
         .btn-alert { background: #4f46e5; color: #ffffff; }
         .btn-alert:hover { background: #4338ca; }
         
-        .main-container { flex: 1; padding: 24px; display: grid; grid-template-columns: 3fr 1.3fr; gap: 24px; width: 100%; }
+        .main-container { 
+            flex: 1; 
+            padding: 20px; 
+            display: grid; 
+            grid-template-columns: 3fr 1.3fr; 
+            gap: 20px; 
+            width: 100%; 
+            max-width: 100vw; 
+            box-sizing: border-box; 
+            overflow-x: hidden; 
+        }
         
         /* 📱 Responsive Breakpoints */
         @media (max-width: 1024px) {
-            .main-container { grid-template-columns: 1fr; padding: 18px; gap: 18px; }
-            header { padding: 12px 18px; }
+            .main-container { grid-template-columns: 1fr; padding: 14px; gap: 14px; }
+            header { padding: 10px 14px; }
         }
-        @media (max-width: 768px) {
-            header { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; }
-            .logo-box { justify-content: space-between; }
-            .tabs-nav { width: 100%; }
-            .top-actions { width: 100%; justify-content: space-between; }
-            .top-actions .btn-action { flex: 1; justify-content: center; }
-            .main-container { padding: 12px; gap: 14px; }
-            .symbol-title, .symbol-price { font-size: 18px; }
+        @media (max-width: 640px) {
+            header { padding: 10px 12px; gap: 8px; }
+            .logo-text h1 { font-size: 15px; }
+            .logo-text p { display: none; }
+            .btn-action { padding: 6px 10px; font-size: 11px; }
+            .symbol-title, .symbol-price { font-size: 17px !important; }
             .chart-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-            .price-badge { flex-wrap: wrap; }
+            .price-badge { flex-wrap: wrap; gap: 6px; }
+            .main-container { padding: 10px; gap: 12px; }
+            .card { padding: 14px !important; }
         }
         
-        .card { background: #111827; border: 1px solid #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); overflow: hidden; }
+        .card { background: #111827; border: 1px solid #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); overflow: hidden; width: 100%; box-sizing: border-box; }
         
         .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
-        .price-badge { display: flex; align-items: baseline; gap: 12px; }
-        .symbol-title { font-size: 22px; font-weight: 900; color: #ffffff; }
-        .symbol-price { font-size: 22px; font-weight: 800; font-family: monospace; color: #38bdf8; }
+        .price-badge { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+        .symbol-title { font-size: 20px; font-weight: 900; color: #ffffff; }
+        .symbol-price { font-size: 20px; font-weight: 800; font-family: monospace; color: #38bdf8; }
         
-        .legend-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-family: monospace; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        .legend-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-family: monospace; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
         .tag-ema50 { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
         .tag-ema200 { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
         
         .tf-selector { display: flex; background: #0f172a; padding: 3px; border-radius: 8px; border: 1px solid #1e293b; gap: 2px; }
-        .tf-btn { background: transparent; border: none; color: #94a3b8; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .tf-btn { background: transparent; border: none; color: #94a3b8; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
         .tf-btn.active { background: #0284c7; color: #ffffff; box-shadow: 0 0 8px rgba(2, 132, 199, 0.4); }
         
-        canvas { display: block; width: 100%; border-radius: 10px; }
+        canvas { display: block; width: 100% !important; max-width: 100% !important; border-radius: 10px; box-sizing: border-box !important; }
         
         /* Decision Panel */
         .verdict-box { text-align: center; padding: 18px 0; border-top: 1px solid #1f293d; border-bottom: 1px solid #1f293d; margin: 12px 0; }
         .verdict-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; }
-        .verdict-badge { font-size: 30px; font-weight: 900; color: #22c55e; margin: 4px 0; text-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+        .verdict-badge { font-size: 26px; font-weight: 900; color: #22c55e; margin: 4px 0; text-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
         .verdict-action { font-size: 12px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; }
         
         .summary-box { font-size: 12px; line-height: 1.6; color: #cbd5e1; background: #0f172a; padding: 12px 14px; border-radius: 10px; border: 1px solid #1e293b; margin-top: 12px; }
@@ -457,7 +502,7 @@ HTML_UI = """<!DOCTYPE html>
         /* Modal */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 999; }
         .modal-overlay.hidden { display: none; }
-        .modal-card { background: #111827; border: 1px solid #10b981; border-radius: 16px; width: 90%; max-width: 440px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        .modal-card { background: #111827; border: 1px solid #10b981; border-radius: 16px; width: 90%; max-width: 440px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
         .modal-input { width: 100%; background: #090d16; border: 1px solid #1e293b; border-radius: 8px; padding: 9px 12px; color: #ffffff; font-size: 12px; font-family: monospace; outline: none; margin-top: 4px; }
         .modal-input:focus { border-color: #10b981; }
     </style>
@@ -466,35 +511,37 @@ HTML_UI = """<!DOCTYPE html>
 
     <!-- Header -->
     <header>
-        <div class="logo-box">
-            <div class="logo-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div class="header-top">
+            <div class="logo-box">
+                <div class="logo-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="logo-text">
+                    <h1>QuantAegis <span class="badge-pro">v1.0 Pro</span></h1>
+                    <p>Institutional Multi-Asset Quantitative Terminal</p>
+                </div>
             </div>
-            <div class="logo-text">
-                <h1>QuantAegis <span class="badge-pro">v1.0 Pro</span></h1>
-                <p>Institutional Multi-Asset Quantitative Terminal</p>
+
+            <div class="top-actions">
+                <button class="btn-action btn-wa" onclick="openWhatsAppModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    <span>WhatsApp Setup</span>
+                </button>
+                <button id="alertBtn" class="btn-action btn-alert" onclick="sendTestAlert()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    <span>Test Alert</span>
+                </button>
             </div>
         </div>
 
-        <!-- Asset & News Switcher Tabs -->
+        <!-- Asset & News Switcher Tabs (Always full-width & smoothly scrollable) -->
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="switchSymbol('BTCUSDT', this)">BTC/USDT</button>
             <button class="tab-btn" onclick="switchSymbol('ETHUSDT', this)">ETH/USDT</button>
             <button class="tab-btn" onclick="switchSymbol('SOLUSDT', this)">SOL/USDT</button>
             <button class="tab-btn" onclick="switchSymbol('XAUUSD', this)">GOLD (XAU)</button>
             <button class="tab-btn" onclick="switchSymbol('USOIL', this)">CRUDE (OIL)</button>
-            <button class="tab-btn tab-news" onclick="showNewsView(this)"><span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; margin-right: 4px;"></span>Forex Factory News</button>
-        </div>
-
-        <div class="top-actions">
-            <button class="btn-action btn-wa" onclick="openWhatsAppModal()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                WhatsApp Setup
-            </button>
-            <button id="alertBtn" class="btn-action btn-alert" onclick="sendTestAlert()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                Test Alert
-            </button>
+            <button class="tab-btn tab-news" onclick="showNewsView(this)"><span class="live-dot"></span>Forex Factory News</button>
         </div>
     </header>
 
@@ -855,13 +902,15 @@ HTML_UI = """<!DOCTYPE html>
             var canvas = document.getElementById('candleCanvas');
             if (!canvas) return;
             var ctx = canvas.getContext('2d');
-            var rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = 380 * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            var parentW = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
+            var w = parentW > 50 ? parentW : (canvas.clientWidth || 320);
+            var h = (window.innerWidth < 640) ? 290 : 360;
 
-            var w = rect.width;
-            var h = 380;
+            canvas.width = Math.floor(w * window.devicePixelRatio);
+            canvas.height = Math.floor(h * window.devicePixelRatio);
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             ctx.clearRect(0, 0, w, h);
 
             if (!candles || candles.length === 0) return;
@@ -876,8 +925,11 @@ HTML_UI = """<!DOCTYPE html>
             minP -= pad;
             maxP += pad;
 
-            var chartH = h - 40;
+            var chartH = h - 35;
             function getY(p) { return chartH - ((p - minP) / (maxP - minP)) * chartH + 10; }
+
+            var rightMargin = (w < 450) ? 48 : 65;
+            var chartW = w - rightMargin;
 
             // Grid lines
             ctx.strokeStyle = '#172033';
@@ -886,21 +938,22 @@ HTML_UI = """<!DOCTYPE html>
                 var gy = 10 + (chartH / 4) * g;
                 ctx.beginPath();
                 ctx.moveTo(0, gy);
-                ctx.lineTo(w - 60, gy);
+                ctx.lineTo(chartW, gy);
                 ctx.stroke();
 
                 var gPrice = maxP - ((maxP - minP) / 4) * g;
                 ctx.fillStyle = '#64748b';
-                ctx.font = '10px monospace';
-                ctx.fillText(gPrice.toFixed(gPrice > 100 ? 2 : 4), w - 55, gy + 3);
+                ctx.font = '9px monospace';
+                ctx.fillText(gPrice.toFixed(gPrice > 100 ? 1 : 3), chartW + 4, gy + 3);
             }
 
-            var barW = Math.max(2, (w - 70) / n - 3);
+            var barStep = chartW / n;
+            var barW = Math.max(2, barStep - 2);
 
             // Draw Candlesticks & Volume
             for (var i = 0; i < n; i++) {
                 var c = candles[i];
-                var x = i * ((w - 70) / n) + 10;
+                var x = i * barStep + 2;
                 var isUp = c.close >= c.open;
                 ctx.fillStyle = isUp ? '#22c55e' : '#ef4444';
                 ctx.strokeStyle = ctx.fillStyle;
@@ -920,7 +973,7 @@ HTML_UI = """<!DOCTYPE html>
                 ctx.fillRect(x, bodyY, barW, bodyH);
 
                 // Volume Bar
-                var volH = Math.min(35, (c.volume / 5000) * 35);
+                var volH = Math.min(26, (c.volume / 5000) * 26);
                 ctx.fillStyle = isUp ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
                 ctx.fillRect(x, chartH - volH + 10, barW, volH);
             }
@@ -933,7 +986,7 @@ HTML_UI = """<!DOCTYPE html>
                 var started = false;
                 for (var i = 0; i < n; i++) {
                     if (ema50[i] !== null) {
-                        var ex = i * ((w - 70) / n) + 10 + barW / 2;
+                        var ex = i * barStep + 2 + barW / 2;
                         var ey = getY(ema50[i]);
                         if (!started) { ctx.moveTo(ex, ey); started = true; }
                         else { ctx.lineTo(ex, ey); }
@@ -950,7 +1003,7 @@ HTML_UI = """<!DOCTYPE html>
                 var started2 = false;
                 for (var i = 0; i < n; i++) {
                     if (ema200[i] !== null) {
-                        var ex2 = i * ((w - 70) / n) + 10 + barW / 2;
+                        var ex2 = i * barStep + 2 + barW / 2;
                         var ey2 = getY(ema200[i]);
                         if (!started2) { ctx.moveTo(ex2, ey2); started2 = true; }
                         else { ctx.lineTo(ex2, ey2); }
@@ -964,11 +1017,15 @@ HTML_UI = """<!DOCTYPE html>
             var canvas = document.getElementById('rsiCanvas');
             if (!canvas || !rsi) return;
             var ctx = canvas.getContext('2d');
-            var rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = 90 * window.devicePixelRatio;
+            var parentW = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
+            var w = parentW > 50 ? parentW : (canvas.clientWidth || 320);
+            var h = 90;
+
+            canvas.width = Math.floor(w * window.devicePixelRatio);
+            canvas.height = Math.floor(h * window.devicePixelRatio);
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            var w = rect.width, h = 90;
             ctx.clearRect(0, 0, w, h);
 
             // Bands (60 & 40)
@@ -996,11 +1053,15 @@ HTML_UI = """<!DOCTYPE html>
             var canvas = document.getElementById('macdCanvas');
             if (!canvas || !macd) return;
             var ctx = canvas.getContext('2d');
-            var rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = 90 * window.devicePixelRatio;
+            var parentW = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
+            var w = parentW > 50 ? parentW : (canvas.clientWidth || 320);
+            var h = 90;
+
+            canvas.width = Math.floor(w * window.devicePixelRatio);
+            canvas.height = Math.floor(h * window.devicePixelRatio);
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            var w = rect.width, h = 90;
             ctx.clearRect(0, 0, w, h);
 
             var zeroY = h / 2;
